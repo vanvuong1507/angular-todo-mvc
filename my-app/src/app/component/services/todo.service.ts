@@ -14,12 +14,12 @@ export class TodoService {
   private lengthSubject : BehaviorSubject<number>=new BehaviorSubject<number>(0);
   private displayTodoSubject: BehaviorSubject<Todo[]>=new BehaviorSubject<Todo[]>([]);
   private  currentFilter:Filter=Filter.All;
-  todo$:Observable<Todo[]>=this.displayTodoSubject.asObservable();
+  todos$:Observable<Todo[]>=this.displayTodoSubject.asObservable();
   length$: Observable<number>=this.lengthSubject.asObservable();
   constructor(private storageService:LocalStorageService) { }
   fetchFromLocalStorage(){
     this.todos=this.storageService.getValue<Todo[]>(TodoService.TodoStorageKey)||[];
-    this.filteredTodos=[...this.todos.map(todo=>({...todo}))];
+    this.filteredTodos=[...this.todos];
     this.updateTodosData();
   }
   updateToLocalStorage(){
@@ -41,6 +41,32 @@ export class TodoService {
     this.updateToLocalStorage();
 
   }
+  editTodo(id:number ,content : string){
+    const index=this.todos.findIndex(t=>t.id===id);
+    const todo=this.todos[index];
+    todo.content=content;
+    this.todos.splice(index,1,todo);
+    this.updateToLocalStorage();
+
+  }
+  deleteTodo(id:number){
+    const index=this.todos.findIndex(t=>t.id===id);
+    this.todos.splice(index,1);
+    this.updateToLocalStorage();
+  }
+  toggleAll(){
+    this.todos=this.todos.map(todo=>{
+      return{
+        ...todo,
+        isCompleted:!this.todos.every(t=>t.isCompleted)
+      };
+    });
+    this.updateToLocalStorage();
+  }
+  clearCompleted(){
+    this.todos=this.todos.filter(todo=>!todo.isCompleted);
+    this.updateToLocalStorage();
+  }
   filterTodos(filter:Filter,isFiltering:boolean=true){
     this.currentFilter=filter;
     switch(filter){
@@ -51,7 +77,7 @@ export class TodoService {
           this.filteredTodos=this.todos.filter(todo=>todo.isCompleted);
           break;
         case Filter.All:
-          this.filteredTodos=[...this.todos.map(todo=>({...todo}))];
+          this.filteredTodos=[...this.todos];
           break;
     }
     if(isFiltering){
